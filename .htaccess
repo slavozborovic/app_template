@@ -1,0 +1,27 @@
+# Shoper App Store — Apache Configuration
+
+# Deny direct access to sensitive directories
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Block direct access to src/, sql/, logs/, vendor/, tools/
+    RewriteRule ^src/       - [F,L]
+    RewriteRule ^sql/       - [F,L]
+    RewriteRule ^logs/      - [F,L]
+    RewriteRule ^vendor/    - [F,L]
+    RewriteRule ^tools/     - [F,L]
+    RewriteRule ^composer\. - [F,L]
+</IfModule>
+
+# Prevent directory listing
+Options -Indexes
+
+# Force correct Content-Type for PHP files
+AddType text/html .php
+
+# Allow iframe embedding (required for Shoper admin panel)
+<IfModule mod_headers.c>
+    Header unset X-Frame-Options
+    Header always unset X-Frame-Options
+    Header set Content-Security-Policy "frame-ancestors https://*.shoparena.pl https://*.shoper.pl https://*.dreamcommerce.com *"
+</IfModule>
