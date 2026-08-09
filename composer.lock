@@ -1,0 +1,70 @@
+{
+    "_readme": [
+        "This file locks the dependencies of your project to a known state",
+        "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
+        "This file is @generated manually (no local PHP/Composer available)"
+    ],
+    "content-hash": "manual-vendor-bootstrap",
+    "packages": [
+        {
+            "name": "dreamcommerce/shop-appstore-lib",
+            "version": "1.2.11",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/dreamcommerce/shop-appstore-lib.git",
+                "reference": "1.2.11"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/dreamcommerce/shop-appstore-lib/zipball/1.2.11",
+                "reference": "1.2.11"
+            },
+            "require": {
+                "php": ">=5.3.0",
+                "psr/log": "^1.0"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "DreamCommerce\\": "src/DreamCommerce"
+                }
+            },
+            "license": ["MIT"]
+        },
+        {
+            "name": "psr/log",
+            "version": "1.1.4",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/php-fig/log.git",
+                "reference": "d8eefef37dee5a669dcdee2f39e7dfc37ea93d32"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/php-fig/log/zipball/1.1.4",
+                "reference": "d8eefef37dee5a669dcdee2f39e7dfc37ea93d32"
+            },
+            "require": {
+                "php": ">=5.3.0"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Psr\\Log\\": "Psr/Log/"
+                }
+            },
+            "license": ["MIT"]
+        }
+    ],
+    "packages-dev": [],
+    "aliases": [],
+    "minimum-stability": "stable",
+    "stability-flags": [],
+    "prefer-stable": false,
+    "prefer-lowest": false,
+    "platform": {
+        "php": ">=7.4"
+    },
+    "platform-dev": [],
+    "plugin-api-version": "2.0.0"
+}

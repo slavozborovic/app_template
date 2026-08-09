@@ -1,0 +1,47 @@
+{
+    "packages": [
+        {
+            "name": "dreamcommerce/shop-appstore-lib",
+            "version": "1.2.11",
+            "version_normalized": "1.2.11.0",
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/dreamcommerce/shop-appstore-lib/zipball/1.2.11",
+                "reference": "1.2.11"
+            },
+            "require": {
+                "php": ">=5.3.0",
+                "psr/log": "^1.0"
+            },
+            "type": "library",
+            "installation-source": "dist",
+            "autoload": {
+                "psr-4": {
+                    "DreamCommerce\\": "src/DreamCommerce"
+                }
+            }
+        },
+        {
+            "name": "psr/log",
+            "version": "1.1.4",
+            "version_normalized": "1.1.4.0",
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/php-fig/log/zipball/1.1.4",
+                "reference": "1.1.4"
+            },
+            "require": {
+                "php": ">=5.3.0"
+            },
+            "type": "library",
+            "installation-source": "dist",
+            "autoload": {
+                "psr-4": {
+                    "Psr\\Log\\": "Psr/Log/"
+                }
+            }
+        }
+    ],
+    "dev": false,
+    "dev-package-names": []
+}

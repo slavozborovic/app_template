@@ -1,5 +1,14 @@
 <?php
-require_once __DIR__ . '/../vendor/autoload.php';
+$autoload = __DIR__ . '/../vendor/autoload.php';
+
+if (!file_exists($autoload)) {
+    throw new \RuntimeException(
+        'Brak katalogu vendor/. Uruchom "composer install" lokalnie '
+        . 'i wgraj folder vendor/ na serwer (albo uruchom composer install na hostingu).'
+    );
+}
+
+require_once $autoload;
 
 $config = require __DIR__ . '/Config.php';
 
