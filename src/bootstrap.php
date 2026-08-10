@@ -11,6 +11,10 @@ if (!file_exists($autoload)) {
 require_once $autoload;
 
 $config = require __DIR__ . '/Config.php';
+$localConfig = __DIR__ . '/Config.local.php';
+if (is_readable($localConfig)) {
+    $config = array_replace_recursive($config, require $localConfig);
+}
 
 date_default_timezone_set($config['timezone']);
 

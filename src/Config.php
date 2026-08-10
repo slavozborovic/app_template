@@ -5,6 +5,7 @@
  * Replace all __PLACEHOLDER__ values with your real credentials
  * before deploying. You get these from the Shoper App Store
  * developer panel after registering your application.
+ * Optional local overrides (not committed): src/Config.local.php
  */
 return [
     /*

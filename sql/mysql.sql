@@ -1,7 +1,12 @@
 -- Shoper App Store — Database Schema
 --
--- Import this file into your MySQL database:
+-- CLI (zalecane — baza wybierana w komendzie):
 --   mysql -u USER -p DB_NAME < sql/mysql.sql
+--
+-- phpMyAdmin (błąd #1046 „Nie wybrano żadnej bazy danych”):
+--   1) Kliknij nazwę bazy w LEWYM panelu, potem Import / SQL, ALBO
+--   2) Odkomentuj linię poniżej i wpisz nazwę swojej bazy:
+-- USE `NAZWA_BAZY`;
 
 CREATE TABLE IF NOT EXISTS shops (
     id          INT PRIMARY KEY AUTO_INCREMENT,
