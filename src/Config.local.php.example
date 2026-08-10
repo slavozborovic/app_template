@@ -1,0 +1,34 @@
+<?php
+/**
+ * Example local overrides — copy to Config.local.php (gitignored).
+ *
+ * App Store mode (default when opened from Shoper admin):
+ *   needs install webhook + DB tokens; URL has ?shop=...&hash=...
+ *
+ * Local preview mode (no iframe):
+ *   set local.enabled = true and shop WebAPI Basic Auth credentials,
+ * then open: https://twoja-domena/index.php  or  http://localhost/.../index.php
+ */
+return [
+    'debug' => true,
+    'php' => [
+        'display_errors' => 'on',
+    ],
+
+    // Optional: DB for App Store installs (not needed for pure local preview)
+    // 'db' => [
+    //     'connection' => 'mysql:host=localhost;dbname=...;charset=utf8mb4',
+    //     'user'       => '...',
+    //     'pass'       => '...',
+    // ],
+
+    'local' => [
+        'enabled'     => true,
+        'shop_url'    => 'https://twoj-sklep.shoparena.pl',
+        'username'    => 'admin_login',
+        'password'    => 'admin_password',
+        'allow_hosts' => ['localhost', '127.0.0.1', '::1'],
+        // Add your deploy host if you want local preview on staging:
+        // 'allow_hosts' => ['localhost', '127.0.0.1', 'keyvalue.pl'],
+    ],
+];

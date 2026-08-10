@@ -2,39 +2,57 @@
 namespace App;
 
 use DreamCommerce\ShopAppstoreLib\Client;
-use DreamCommerce\ShopAppstoreLib\Client\OAuth;
 
 class App
 {
+    public const MODE_APPSTORE = 'appstore';
+    public const MODE_LOCAL    = 'local';
+
     private array  $config;
-    private \PDO   $db;
+    private ?\PDO  $db         = null;
     private ?array $shopData   = null;
     private ?array $tokenData  = null;
     private        $client     = null;
     private string $locale     = 'pl_PL';
+    private string $mode       = self::MODE_APPSTORE;
 
     public function __construct(array $config)
     {
         $this->config = $config;
-        $this->db = new \PDO(
-            $config['db']['connection'],
-            $config['db']['user'],
-            $config['db']['pass'],
-            [
-                \PDO::ATTR_ERRMODE            => \PDO::ERRMODE_EXCEPTION,
-                \PDO::ATTR_DEFAULT_FETCH_MODE => \PDO::FETCH_ASSOC,
-            ]
-        );
     }
 
     /**
-     * Bootstrap the app: load shop, verify tokens, build OAuth client.
+     * Bootstrap the app in App Store (OAuth + DB) or local preview (Basic Auth) mode.
      */
     public function bootstrap(): void
     {
         $this->locale = $_GET['locale'] ?? 'pl_PL';
+        $this->mode   = $this->resolveMode();
 
-        // 1. Load shop from DB
+        if ($this->mode === self::MODE_LOCAL) {
+            $this->bootstrapLocal();
+            return;
+        }
+
+        $this->bootstrapAppStore();
+    }
+
+    public function isLocalMode(): bool
+    {
+        return $this->mode === self::MODE_LOCAL;
+    }
+
+    public function getMode(): string
+    {
+        return $this->mode;
+    }
+
+    /**
+     * App Store iframe: requires ?shop=... and installed shop + OAuth tokens in DB.
+     */
+    private function bootstrapAppStore(): void
+    {
+        $this->connectDb();
         $this->loadShopData();
 
         if (!$this->shopData || !$this->shopData['installed']) {
@@ -44,8 +62,124 @@ class App
             );
         }
 
-        // 2. Load tokens + refresh if near expiry
         $this->loadAndRefreshTokens();
+    }
+
+    /**
+     * Local preview: no Shoper iframe / hash / install. Uses WebAPI Basic Auth.
+     */
+    private function bootstrapLocal(): void
+    {
+        $local = $this->config['local'] ?? [];
+
+        if (empty($local['enabled'])) {
+            throw new \RuntimeException(
+                'Tryb lokalny jest wyłączony. Ustaw local.enabled = true w Config.local.php.'
+            );
+        }
+
+        $this->assertLocalHostAllowed($local['allow_hosts'] ?? []);
+
+        $shopUrl  = rtrim((string)($local['shop_url'] ?? ''), '/');
+        $username = (string)($local['username'] ?? '');
+        $password = (string)($local['password'] ?? '');
+
+        if ($shopUrl === '' || $username === '' || $password === '') {
+            throw new \RuntimeException(
+                'Tryb lokalny wymaga local.shop_url, local.username i local.password '
+                . 'w Config.local.php (dane logowania do panelu / WebAPI sklepu).'
+            );
+        }
+
+        $this->client = Client::factory(
+            Client::ADAPTER_BASIC_AUTH,
+            [
+                'entrypoint' => $shopUrl,
+                'username'   => $username,
+                'password'   => $password,
+            ]
+        );
+
+        $this->shopData = [
+            'id'        => 0,
+            'shop'      => 'local-preview',
+            'shop_url'  => $shopUrl,
+            'version'   => 1,
+            'auth_code' => null,
+            'installed' => 1,
+            'mode'      => self::MODE_LOCAL,
+        ];
+
+        $this->log('LOCAL mode bootstrapped for ' . $shopUrl);
+    }
+
+    /**
+     * Prefer App Store when Shoper opens the iframe (?shop= present).
+     * Otherwise use local mode when enabled.
+     */
+    private function resolveMode(): string
+    {
+        $forced = strtolower((string)($_GET['mode'] ?? ''));
+        if ($forced === self::MODE_LOCAL) {
+            return self::MODE_LOCAL;
+        }
+        if ($forced === self::MODE_APPSTORE) {
+            return self::MODE_APPSTORE;
+        }
+
+        $hasShopParam = trim((string)($_GET['shop'] ?? '')) !== '';
+        if ($hasShopParam) {
+            return self::MODE_APPSTORE;
+        }
+
+        if (!empty($this->config['local']['enabled'])) {
+            return self::MODE_LOCAL;
+        }
+
+        return self::MODE_APPSTORE;
+    }
+
+    /**
+     * @param array<int, string> $allowHosts
+     */
+    private function assertLocalHostAllowed(array $allowHosts): void
+    {
+        if ($allowHosts === []) {
+            return;
+        }
+
+        $host = strtolower((string)($_SERVER['HTTP_HOST'] ?? $_SERVER['SERVER_NAME'] ?? ''));
+        $host = preg_replace('/:\d+$/', '', $host) ?: '';
+
+        $normalized = [];
+        foreach ($allowHosts as $allowed) {
+            $normalized[] = strtolower(preg_replace('/:\d+$/', '', (string)$allowed) ?: '');
+        }
+
+        if ($host === '' || !in_array($host, $normalized, true)) {
+            throw new \RuntimeException(
+                'Tryb lokalny zablokowany dla hosta „' . $host . '”. '
+                . 'Dodaj go do local.allow_hosts w Config.local.php '
+                . 'albo uruchom na localhost.'
+            );
+        }
+    }
+
+    private function connectDb(): void
+    {
+        if ($this->db instanceof \PDO) {
+            return;
+        }
+
+        $this->db = new \PDO(
+            $this->config['db']['connection'],
+            $this->config['db']['user'],
+            $this->config['db']['pass'],
+            [
+                \PDO::ATTR_ERRMODE            => \PDO::ERRMODE_EXCEPTION,
+                \PDO::ATTR_DEFAULT_FETCH_MODE => \PDO::FETCH_ASSOC,
+            ]
+        );
     }
 
     private function loadShopData(): void
@@ -53,7 +187,11 @@ class App
         $shop = $_GET['shop'] ?? '';
 
         if (!$shop) {
-            throw new \RuntimeException('Missing shop parameter.');
+            throw new \RuntimeException(
+                'Missing shop parameter. '
+                . 'Dla podglądu bez Shopera włącz tryb lokalny w Config.local.php '
+                . '(local.enabled = true) i otwórz index.php bez parametru shop.'
+            );
         }
 
         $stmt = $this->db->prepare(
@@ -82,7 +220,6 @@ class App
             );
         }
 
-        // Create OAuth client
         $this->client = Client::factory(
             Client::ADAPTER_OAUTH,
             [
@@ -92,7 +229,6 @@ class App
             ]
         );
 
-        // Refresh token if expires within 24 hours
         $expiresAt = strtotime($this->tokenData['expires_at']);
         if ($expiresAt && ($expiresAt - time()) < 86400) {
             try {
@@ -150,9 +286,17 @@ class App
     // ── Accessors ──
 
     public function getClient()          { return $this->client; }
-    public function getDb(): \PDO        { return $this->db; }
+
+    public function getDb(): \PDO
+    {
+        if (!$this->db instanceof \PDO) {
+            $this->connectDb();
+        }
+        return $this->db;
+    }
+
     public function getLocale(): string  { return $this->locale; }
-    public function getShopData(): array { return $this->shopData; }
+    public function getShopData(): array { return $this->shopData ?? []; }
     public function getConfig(): array   { return $this->config; }
 
     public static function escapeHtml(string $str): string

@@ -4,8 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="referrer" content="origin">
-    <title>Shoper App</title>
+    <title>Shoper App<?= !empty($isLocalMode) ? ' (local)' : '' ?></title>
+    <?php if (empty($isLocalMode)): ?>
     <script src="https://dcsaascdn.net/js/dc-sdk-1.0.5.min.js"></script>
+    <?php endif; ?>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
@@ -26,6 +28,23 @@
             font-size: 1.4rem;
             margin-bottom: 1rem;
         }
+        .badge {
+            display: inline-block;
+            font-size: .75rem;
+            font-weight: 600;
+            padding: .2rem .55rem;
+            border-radius: 999px;
+            margin-bottom: .85rem;
+            vertical-align: middle;
+        }
+        .badge-local {
+            background: #ffedd5;
+            color: #9a3412;
+        }
+        .badge-appstore {
+            background: #dcfce7;
+            color: #166534;
+        }
         .info { color: #555; line-height: 1.8; }
         .info strong { color: #333; }
         .muted { margin-top: 1rem; color: #888; font-size: .85rem; }
@@ -34,15 +53,27 @@
 <body>
 
 <div class="card">
+    <?php if (!empty($isLocalMode)): ?>
+        <span class="badge badge-local">tryb lokalny</span>
+    <?php else: ?>
+        <span class="badge badge-appstore">tryb App Store</span>
+    <?php endif; ?>
+
     <h1>&#10004; Aplikacja dziala!</h1>
     <p class="info">
         Sklep: <strong><?= htmlspecialchars($shopData['shop'] ?? 'N/A') ?></strong><br>
         URL: <strong><?= htmlspecialchars($shopData['shop_url'] ?? 'N/A') ?></strong><br>
-        Shop ID: <strong><?= htmlspecialchars($shopData['id'] ?? 'N/A') ?></strong>
+        Shop ID: <strong><?= htmlspecialchars((string)($shopData['id'] ?? 'N/A')) ?></strong>
     </p>
     <p class="muted">
-        Jesli widzisz ten tekst, polaczenie z App Store dziala poprawnie.
-        Teraz mozesz zaczac budowac swoja aplikacje!
+        <?php if (!empty($isLocalMode)): ?>
+            Podgląd bez osadzania w panelu Shoper (WebAPI Basic Auth).
+            SDK iframe jest wyłączone. Aby wrócić do trybu App Store, otwórz aplikację z panelu sklepu
+            albo wyłącz <code>local.enabled</code>.
+        <?php else: ?>
+            Jesli widzisz ten tekst, polaczenie z App Store dziala poprawnie.
+            Teraz mozesz zaczac budowac swoja aplikacje!
+        <?php endif; ?>
     </p>
 
     <?php if (!empty($error)): ?>
@@ -55,30 +86,16 @@
 
 </div>
 
-<!--
-    Available PHP variables in this view:
-    $shopData   — array: id, shop, shop_url, version, auth_code, installed
-    $_locale    — string: e.g. 'pl_PL'
-    $_shopUrl   — string: full shop URL
-    $error      — string|null: error message (if any)
-
-    To add more variables, use $this->assign('name', $value) in the controller.
--->
-
 <script>
-/**
- * DreamCommerce ShopApp SDK initialization.
- *
- * IMPORTANT: This is required to make the iframe visible inside
- * the Shoper admin panel. The sequence must be:
- *   1. new ShopApp(callback, debug)
- *   2. app.init(hash, shopUrl)
- *   3. app.show()
- */
 (function() {
+    var isLocal = <?= !empty($isLocalMode) ? 'true' : 'false' ?>;
+    if (isLocal || typeof ShopApp === 'undefined') {
+        return;
+    }
+
     var params  = new URLSearchParams(window.location.search);
     var hash    = params.get('hash') || '';
-    var shopUrl = '<?= htmlspecialchars($shopData['shop_url'] ?? '') ?>';
+    var shopUrl = <?= json_encode($shopData['shop_url'] ?? '', JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
 
     if (!hash) {
         console.warn('[APP] No hash parameter in URL — SDK init skipped');
@@ -88,7 +105,7 @@
     var app = new ShopApp(function() {
         app.init(hash, shopUrl);
         app.show();
-    }, false); // Set to true for SDK debug logging
+    }, false);
 })();
 </script>
 

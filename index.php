@@ -29,7 +29,7 @@ _appLog('REQUEST: ' . $_SERVER['REQUEST_METHOD'] . ' ' . ($_SERVER['REQUEST_URI'
 try {
     $config = require __DIR__ . '/src/bootstrap.php';
 
-    // ── POST → Billing System webhook ──
+    // ── POST → Billing System webhook (App Store only) ──
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $payload = $_POST;
 
@@ -71,12 +71,14 @@ try {
         exit;
     }
 
-    // ── GET → App UI ──
+    // ── GET → App UI (App Store iframe OR local preview) ──
     _appLog('GET: creating App');
     $app = new \App\App($config);
 
-    _appLog('GET: bootstrapping (shop=' . ($_GET['shop'] ?? 'EMPTY') . ')');
+    _appLog('GET: bootstrapping (shop=' . ($_GET['shop'] ?? 'EMPTY')
+        . ', mode=' . ($_GET['mode'] ?? 'auto') . ')');
     $app->bootstrap();
+    _appLog('GET: mode=' . $app->getMode());
 
     _appLog('GET: dispatching controller');
     $app->dispatch();
