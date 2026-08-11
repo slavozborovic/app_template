@@ -20,7 +20,8 @@ date_default_timezone_set($config['timezone']);
 
 if (($config['php']['display_errors'] ?? 'off') === 'on') {
     ini_set('display_errors', 1);
-    error_reporting(E_ALL);
+    // Hide noisy PHP 8.5 deprecations from vendor libs in the UI.
+    error_reporting(E_ALL & ~E_DEPRECATED & ~E_USER_DEPRECATED);
 } else {
     ini_set('display_errors', 0);
     error_reporting(0);

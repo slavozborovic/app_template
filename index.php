@@ -2,9 +2,10 @@
 /**
  * Shoper App Store — Entry Point
  *
- * Handles two types of requests:
- *   POST → Billing System webhooks (install, uninstall, billing, upgrade)
- *   GET  → App UI rendered inside Shoper admin iframe
+ * Handles three types of requests:
+ *   POST ?q=controller/action → App controller (AJAX / form actions)
+ *   POST (no q / billing)     → Billing System webhooks (install, uninstall, billing, upgrade)
+ *   GET                       → App UI rendered inside Shoper admin iframe
  */
 
 // Allow iframe embedding from any Shoper domain
@@ -29,6 +30,21 @@ _appLog('REQUEST: ' . $_SERVER['REQUEST_METHOD'] . ' ' . ($_SERVER['REQUEST_URI'
 try {
     $config = require __DIR__ . '/src/bootstrap.php';
 
+    $routeQ = trim((string)($_GET['q'] ?? ''));
+    $isAppRoutePost = $_SERVER['REQUEST_METHOD'] === 'POST'
+        && $routeQ !== ''
+        && $routeQ !== 'index/index';
+
+    // ── POST z ?q=controller/action → logika aplikacji (AJAX / formularze) ──
+    if ($isAppRoutePost) {
+        _appLog('POST app route: q=' . $routeQ
+            . ', shop=' . ($_GET['shop'] ?? 'EMPTY'));
+        $app = new \App\App($config);
+        $app->bootstrap();
+        $app->dispatch();
+        exit;
+    }
+
     // ── POST → Billing System webhook (App Store only) ──
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $payload = $_POST;
@@ -36,6 +52,7 @@ try {
         _appLog('POST received: action=' . ($payload['action'] ?? 'EMPTY')
             . ', shop=' . ($payload['shop'] ?? 'EMPTY')
             . ', keys=' . implode(',', array_keys($payload))
+            . ', content_type=' . ($_SERVER['CONTENT_TYPE'] ?? '')
         );
 
         // Fallback: read raw body if $_POST is empty
@@ -57,6 +74,7 @@ try {
         if (empty($payload['action'])) {
             _appLog('FATAL: Missing action in POST payload');
             http_response_code(400);
+            header('Content-Type: application/json; charset=UTF-8');
             echo json_encode(['error' => 'Missing action']);
             exit;
         }
@@ -67,6 +85,7 @@ try {
         _appLog('Billing event dispatched OK: ' . $payload['action']);
 
         http_response_code(200);
+        header('Content-Type: application/json; charset=UTF-8');
         echo json_encode(['ok' => true]);
         exit;
     }
@@ -91,6 +110,7 @@ try {
 
     if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
         http_response_code(500);
+        header('Content-Type: application/json; charset=UTF-8');
         echo json_encode(['error' => $e->getMessage()]);
         exit;
     }

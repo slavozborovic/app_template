@@ -29,7 +29,9 @@ return [
      * Database configuration (MySQL)
      *
      * Import sql/mysql.sql into your database first:
-     *   mysql -u USER -p DB_NAME < sql/mysql.sql
+     *   1) W sql/mysql.sql podmień USE `NAZWA_BAZY` na nazwę swojej bazy
+     *   2) phpMyAdmin → SQL → wklej plik  ALBO
+     *      mysql -u USER -p DB_NAME < sql/mysql.sql
      *
      * Not required for local preview mode (Basic Auth).
      */
